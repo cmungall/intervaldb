@@ -33,6 +33,8 @@ intervals. It's primary purpose is for genomics data.
 See intervaldb_demo.pro for an example of how to use it in conjunction
 with featureloc/5 etc
 
+See: http://blipkit.org
+
 ---+ Test
 
 Do the following:
