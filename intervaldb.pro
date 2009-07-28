@@ -37,6 +37,9 @@
 
 :- initialization load_foreign_library(intervaldb4pl).
 
+% TODO: change to. See email from Jan on 2009/07/22 "Development issues"
+%:- use_foreign_library(foreign(mylib)).
+
 %% span(?N:int,?Start:int,?End:int) is nondet
 % extensional predicate (i.e. unit clause that is meant to be read in or asserted as data)
 
