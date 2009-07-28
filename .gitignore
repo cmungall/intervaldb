@@ -1,0 +1,7 @@
+Makefile
+config.h
+*.o
+*.dylib
+*.a
+config.*
+autom4te.cache
