@@ -15,7 +15,7 @@
 % * featureloc/5 -- maps a feature to its start, end and and strand on a sequence
 % * subfeature_of/2 -- maps a feature to its container; eg exon to transcript
 load_demo_data:-
-        [dmeltest].
+        ['t/dmeltest'].
 
 
 %% index_features
