@@ -28,7 +28,6 @@ typedef struct {
   char **parents;
   int num_attributes;
   Attribute **attributes;
-  //  char **attributes;
 } Feature;
 
 typedef struct {
