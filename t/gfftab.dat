@@ -3,4 +3,5 @@
 ctg123	.	gene	1000	9000	.	+	.	ID=gene00001;Name=EDEN;Alias=dave's gene,dave
 ctg123	.	TF_binding_site	1000	1012	.	+	.	ID=tfbs00001;Parent=gene00001,gene00002
 ctg123	.	mRNA	1050	9000	.	.	.	ID=mRNA00001;Parent=gene00001;Name=EDEN.1
+# a comment
 ctg123	.	mRNA	1050	9000	.	-	.	ID=mRNA00002;Parent=gene00001;Name=EDEN.2;attr0=dave
