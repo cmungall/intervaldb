@@ -22,6 +22,7 @@ int gff_get_doc(GFFDoc *gffdoc, char *file);
 int gff_num_lines(char* file);
 int gff_read_lines(int n, char *file);
 int gff_read_file(Feature **features, int *n, char *file);
+int gff_read_pragma(FILE *fp);
 int gff_read_record(Feature * feature, FILE *fp);
 char **gff_split_attribute(char *attr, int *n);
 //int gff_split_attribute(char **ret_values, char *attr, int *n);

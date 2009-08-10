@@ -32,17 +32,18 @@ main()
 int gff_get_doc(GFFDoc *gffdoc, char *file)
 {
   int x = 0;
+  int r;
   int err;
 
   // count the number of lines and create an array of Features
   int n = gff_num_lines(file);
   printf("number of lines = %d\n",n);
   
-  int r = gff_read_lines(n,file);
-  printf("number of records = %d\n",r);
+  //r = gff_read_lines(n,file);
+  //printf("number of records = %d\n",r);
 
   // allocate enough memory for more records than we need
-  gffdoc->features = malloc(sizeof(Feature*)*r);
+  gffdoc->features = malloc(sizeof(Feature*)*n);
   err = gff_read_file(gffdoc->features, &gffdoc->num_features, file);
 
   // handle errors
@@ -116,6 +117,14 @@ int gff_read_file(Feature **features,int *n,char *file)
   // open file and count lines
   if (!(fp = fopen(file,"r"))) return GFF_NO_FILE;
   
+  // first check that we are dealing with a GFF 3 file
+  feature = malloc(sizeof(Feature)); 
+  if ((err = gff_read_record(feature,fp)) != GFF_DOC)
+    {
+      free(feature);
+      return GFF_FAIL;
+    }
+
   while (err != GFF_EOF)
     {
       printf("gff_read_file:1 x=%d\n",x);
@@ -165,9 +174,10 @@ int gff_read_record(Feature *feature, FILE *fp)
       if ((c = fgetc(fp)) == '#')
 	{
 	  // we have a pragma
-	  while ((c = fgetc(fp)) != '\n')
-	    if(c == EOF) return GFF_EOF;
-	  return GFF_PRAGMA;
+	  //while ((c = fgetc(fp)) != '\n')
+	  //if(c == EOF) return GFF_EOF;
+	  err = gff_read_pragma(fp);
+	  return err;
 	}
       else 
 	{
@@ -314,6 +324,29 @@ int gff_read_record(Feature *feature, FILE *fp)
 
   printf("gff_read_record:4\n");
   return GFF_EOF;
+}
+
+int gff_read_pragma(FILE *fp)
+{
+  char buffer[BUFFER_SIZE];
+  char *cp = buffer;
+  int err = GFF_EOF;
+
+  while((*cp = fgetc(fp)) != EOF)
+    {
+      if (*cp == '\n') 
+	{
+	  *cp = '\0';
+	  printf("PRAGMA=%s*\n",buffer);
+	  if (strcmp(buffer,"gff-version 3") == 0)
+	    return GFF_DOC;
+	  // process PRAGMA
+	  return GFF_PRAGMA;
+	}
+      cp++;
+    }
+
+  return err;
 }
 
 char **gff_split_attribute(char *attr, int *n)
