@@ -1,11 +1,11 @@
 typedef enum {Inheritance, Partof, Root} Strand_t;
 
 typedef struct {
-  int start;
-  int end;
+  int *start;
+  int *end;
   //  Strand_t strand;
-  int strand;
-  int phase;
+  int *strand;
+  int *phase;
 } SeqLoc;
 
 // Duplicates ID, Name, parents
@@ -21,7 +21,7 @@ typedef struct {
   char *type;
   int num_locs;
   SeqLoc **locs;
-  float score;
+  float *score;
   char *ID;
   char *Name;
   int num_parents;
