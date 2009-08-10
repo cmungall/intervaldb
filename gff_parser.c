@@ -205,19 +205,28 @@ int gff_read_record(Feature *feature, FILE *fp)
 
 	    // col 1 seqid
 	    if (columns[0][0] == '.')
+	      {
 	      feature->seqid = NULL;
+	      free(columns[0]);
+	      }
 	    else
 	      feature->seqid = columns[0];
 
 	    // col2 source
 	    if (columns[1][0] == '.')
+	      {
 	      feature->source = NULL;
+	      free(columns[1]);
+	      }
 	    else
 	      feature->source = columns[1];
 
 	    // col3 type
 	    if (columns[2][0] == '.')
+	      {
 	      feature->type = NULL;
+	      free(columns[2]);
+	      }
 	    else
 	      feature->type = columns[2];
 
@@ -351,11 +360,6 @@ int gff_read_record(Feature *feature, FILE *fp)
 	    // free up colums that we don't need
 	    for (x=3; x<9; x++)
 	      free(columns[x]);
-	      //free(columns[3]);
-	      //free(columns[4]);
-	      //free(columns[5]);
-	      //free(columns[7]);
-	      //free(columns[8]);
 
 	    return err;
 	  }
