@@ -29,5 +29,6 @@ char **gff_split_attribute(char *attr, int *n);
 char **gff_read_columns(char *record);
 int gff_free(GFFDoc *gffdoc);
 void gff_print_feature(Feature *f);
+void gff_print(GFFDoc *gffdoc);
 
 

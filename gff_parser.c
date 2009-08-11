@@ -22,9 +22,10 @@ main()
 
   if (err) // positive value so ok
     {
-      printf("Print file\n");
-      for (x=0; x<gff->num_features; x++)
-	gff_print_feature(gff->features[x]);
+      gff_print(gff);
+      //printf("Print file\n");
+      //for (x=0; x<gff->num_features; x++)
+      //gff_print_feature(gff->features[x]);
     }
   err = gff_free(gff);
 }
@@ -476,6 +477,7 @@ int gff_free(GFFDoc *gffdoc)
 void gff_print_feature(Feature *f)
 {
   int attr = 0;
+  int x = 0;
 
   if (f->seqid == NULL)
     printf(".\t");
@@ -506,7 +508,7 @@ void gff_print_feature(Feature *f)
     printf(".\t");
   else
     printf("%f\t",*f->score);
-
+  
   if (f->locs[0]->strand == NULL)
     printf(".\t");
   else
@@ -522,7 +524,7 @@ void gff_print_feature(Feature *f)
   else
     printf("%d\t",*f->locs[0]->phase);
 
- if (f->ID != NULL)
+  if (f->ID != NULL)
     {
       printf("ID=%s",f->ID);
       attr++;
@@ -533,7 +535,6 @@ void gff_print_feature(Feature *f)
       printf("Name=%s",f->Name);
       attr++;
     }
-  int x=0;
   for (x=0; x<f->num_parents; x++)
     {
       if (attr > 0 && x == 0)
@@ -558,5 +559,19 @@ void gff_print_feature(Feature *f)
       attr++;
     }
   printf("\n");
+
+  return;
+}
+
+void gff_print(GFFDoc *gffdoc)
+{
+  int x = 0;
+  Feature **fp = gffdoc->features;
+
+  printf("Print file\n");
+  for (x=0; x<gffdoc->num_features; x++)
+    {
+      gff_print_feature(*fp++);
+    } 
   return;
 }
