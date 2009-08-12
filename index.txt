@@ -50,6 +50,10 @@ t.
 
 Currently works on SWI-Prolog only. Yap compatibility layer in progress.
 
+---+ GFF Parser
+
+In progress. May move to a different repository
+
 
 ---+ Authors
 
