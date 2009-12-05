@@ -16,18 +16,28 @@ main()
 {
   int err;
   int x;
-  GFFDoc *gff = malloc(sizeof(GFFDoc));
-  
-  err = gff_get_doc(gff,"t/gfftab.dat");
+  char file[BUFFER_SIZE];
 
-  if (err) // positive value so ok
+  //  for (x=0; x<2; x++) 
+  for (x=1; x<2; x++) 
     {
-      gff_print(gff);
-      //printf("Print file\n");
-      //for (x=0; x<gff->num_features; x++)
-      //gff_print_feature(gff->features[x]);
+      x = 7;
+      sprintf(file,"t/gfftab%d.dat",x);
+      GFFDoc *gff = malloc(sizeof(GFFDoc));
+
+      //err = gff_get_doc(gff,"t/gfftab.dat"); 
+      err = gff_get_doc(gff,file); 
+
+      if (err) // positive value so ok
+	{
+	  gff_print(gff);
+	  //printf("Print file\n");
+	  //for (x=0; x<gff->num_features; x++)
+	  //gff_print_feature(gff->features[x]);
+	}
+      err = gff_free(gff);
+      printf("X=%d\n",x);
     }
-  err = gff_free(gff);
 }
 
 int gff_get_doc(GFFDoc *gffdoc, char *file)
@@ -129,7 +139,9 @@ int gff_read_file(Feature **features,int *n,char *file)
   while (err != GFF_EOF)
     {
       printf("gff_read_file:1 x=%d\n",x);
-      feature = malloc(sizeof(Feature)); 
+      feature = malloc(sizeof(Feature));
+      feature->num_locs = 1;
+
       err = gff_read_record(feature,fp);
       switch(err) {
       case GFF_SUCCESS: 
@@ -201,8 +213,8 @@ int gff_read_record(Feature *feature, FILE *fp)
 	    if ((columns = gff_read_columns(buffer)) == NULL)
 	      return GFF_BAD_COLUMN;
 
-	    //for (x=0; x<9; x++)
-	    //printf("col %d %s*\n",x,columns[x]);
+	    //	    for (x=0; x<9; x++)
+	    //	    printf("col %d %s*\n",x,columns[x]);
 
 	    // col 1 seqid
 	    if (columns[0][0] == '.')
@@ -303,12 +315,17 @@ int gff_read_record(Feature *feature, FILE *fp)
 	    Attribute *attributes[BUFFER_SIZE];
 	    feature->num_parents = 0;
 	    feature->num_attributes = 0;
-	    while (*colp != '\0')
+	    //	    while (*colp != '\0')
+	    while (*colp != '\0' && *colp != EOF && *colp != '\n')
 	      {
+		// return an error for bad syntax
+		if (*colp == ',' || *colp == ';') return GFF_BAD_COLUMN;
+
 		// for each attribute
 		int attr_len = 0;
 		char *attrp = attr_buffer;
-		while (*colp != ';' && *colp != '\0')
+		//		while (*colp != ';' && *colp != '\0')
+		while (*colp != ';' && *colp != '\0' && *colp != '\n'&& *colp != EOF )
 		  {
 		    *attrp++ = *colp++;
 		    attr_len++;
@@ -326,28 +343,34 @@ int gff_read_record(Feature *feature, FILE *fp)
 		  }
 		else if (strncmp("Parent=",attr_buffer,7)==0)
 		  {
+		    printf("Parent:%s* <%d>\n",colp,colp);
 		    feature->parents = gff_split_attribute(&attr_buffer[7],&(feature->num_parents));
 		  }
 		else
 		  {
 		    int pos_eq = 0;
 		    attrp = attr_buffer;
-		    while (*attrp != '=' && *attrp != '\0')
+		    printf("ATTR:%d=%s*\n",feature->num_attributes,attrp);
+		    while ((*attrp != '=') && (*attrp != '\0'))
 		      {
-			attr_name[pos_eq] = *attrp++;
-			pos_eq++;
+			attr_name[pos_eq++] = *attrp++;
 		      }
 		    attr_name[pos_eq] = '\0';
 		    attrp++;
-		    printf("attr:%s\n",attr_name);
+		    printf("attr:%d=%s\n",feature->num_attributes,attr_name);
 		    attributes[feature->num_attributes] = malloc(sizeof(Attribute));
-		    attributes[feature->num_attributes]->tag = malloc(sizeof(char)*(pos_eq));
+		    attributes[feature->num_attributes]->tag = malloc(sizeof(char)*(pos_eq+1));
+		    //		    attributes[feature->num_attributes]->tag = malloc(sizeof(char)*(pos_eq));
 		    strcpy(attributes[feature->num_attributes]->tag,attr_name);
+		    printf("Col8left1:%s* <%d>\n",colp,colp);
 		    attributes[feature->num_attributes]->vals = gff_split_attribute(attrp,&attributes[feature->num_attributes]->num_vals);
+		    printf("Col8left2:%s* <%d>\n",colp,colp);
 		    printf("num_vals=%d\n",attributes[feature->num_attributes]->num_vals);
 		    feature->num_attributes++;
 		  }
-		colp++;
+		//		colp++;
+		if (*colp != '\0') colp++;
+		printf("Col8left3:%s* <%d>\n",colp,colp);
 	      }
 	    
 	    //create attributes
@@ -403,22 +426,28 @@ char **gff_split_attribute(char *attr, int *n)
   int attr_len = 0;
   int num_values = 0;
   
+  printf("gff_split:%s\n",attr);
+
   while (*attr_end != '\0')
     {
       attr_len++;
       if (*attr_end == ',')
+	//      if (*attr_end == ',' || *attr_end == ';')
 	{
-	  values[num_values] = malloc(sizeof(char)*(attr_len));
+	  //	  values[num_values] = malloc(sizeof(char)*(attr_len));
+	  values[num_values] = malloc(sizeof(char)*(attr_len+1));
 	  *attr_end = '\0';
 	  strcpy(values[num_values],attr_start);
-	  attr_end++;
-	  attr_start = attr_end--;
+	  //	  attr_end++;
+	  //	  attr_start = attr_end--;
+	  attr_start = attr_end+1;
 	  attr_len = 0;
 	  num_values++;
 	}
       attr_end++;
     }
-  values[num_values] = malloc(sizeof(char)*(attr_len));
+  //  values[num_values] = malloc(sizeof(char)*(attr_len));
+  values[num_values] = malloc(sizeof(char)*(attr_len+1));
   *attr_end = '\0';
   strcpy(values[num_values],attr_start);
   num_values++;
@@ -429,8 +458,12 @@ char **gff_split_attribute(char *attr, int *n)
   for (x=0; x<num_values; x++)
     {
     ret_values[x] = values[x];
-    printf("%s\n",ret_values[x]);
+    printf("gff_split:%s\n",ret_values[x]);
     }
+
+  printf("gff_split:%s*\n",attr_start);
+  printf("gff_split:%s*\n",attr_end);
+
   return ret_values;
 } 
 
@@ -454,7 +487,7 @@ char **gff_read_columns(char *record)
       while (*rp != '\t' && *rp != '\n')
 	{
 	  buffer[n] = *rp;
-	  //       	  printf("%c",*rp); printf("%c",*cp); printf("%c",buffer[n]);
+	  //printf("%c",*rp); printf("%c",*cp); printf("%c",buffer[n]);
 	  n++; cp++; rp++;
 	}
       *cp = '\0';  
@@ -470,6 +503,62 @@ char **gff_read_columns(char *record)
 
 int gff_free(GFFDoc *gffdoc)
 {
+  int x = 0;
+  Feature **fp = gffdoc->features;
+  int i,j;
+
+  for (x=0; x<gffdoc->num_features; x++)
+    {
+      free((*fp)->seqid);
+      free((*fp)->source);
+      free((*fp)->type);
+      //printf("num_locs=%d\n",(*fp)->num_locs);
+      SeqLoc **seqloc  = (*fp)->locs;
+      for (i=0; i<(*fp)->num_locs; i++)
+	{
+	  free((*seqloc)->start);
+	  free((*seqloc)->end);
+	  free((*seqloc)->strand);
+	  free((*seqloc)->phase);
+	  free(*seqloc++);
+	}
+      free((*fp)->locs);
+      free((*fp)->score);
+      free((*fp)->ID);
+      free((*fp)->Name);
+      char **parent = (*fp)->parents;
+      for (i=0; i<(*fp)->num_parents; i++)
+	{
+	  //printf("attr=%d\n",i);
+	  //free(*parent++);
+	  free((*fp)->parents[i]);
+	}
+      free((*fp)->parents);
+      Attribute **attr = (*fp)->attributes;
+      for (i=0; i<(*fp)->num_attributes; i++)
+	{
+	  //printf("attr=%d\n",i);
+	  free((*attr)->tag);
+	  char **valp = (*attr)->vals;
+	  for(j=0; j<((*attr)->num_vals); j++)
+	    {
+	      //printf("vals=%d\n",j);
+	      //free(*valp++);
+	      free((*attr)->vals[j]);
+	    }
+	  free((*attr)->vals);
+	  free(*attr++);
+	}
+      free((*fp)->attributes);
+
+      //gff_print_feature(*fp);
+      free(*fp);
+      fp++;
+      printf("Row %d free\n",x);
+    }
+  free(gffdoc->features);
+  free(gffdoc);
+
   return GFF_SUCCESS;
 }
 
@@ -526,7 +615,8 @@ void gff_print_feature(Feature *f)
 
   if (f->ID != NULL)
     {
-      printf("ID=%s",f->ID);
+      //      printf("ID%d=%s*",attr,f->ID);
+      printf("ID=%s*",f->ID);
       attr++;
     }
   if (f->Name != NULL)
@@ -542,19 +632,20 @@ void gff_print_feature(Feature *f)
       else if (x == 0) 
 	printf("Parent=");
       if (x > 0) printf(",");
-      printf("%s",f->parents[x]);
+      printf("%s*",f->parents[x]);
       attr++;
     }
   for (x=0; x<f->num_attributes; x++)
     {
       if (attr > 0) printf(";");
+      //      printf("Attrs%d:",f->num_attributes);
       printf("%s=",f->attributes[x]->tag);
       int i = 0;
       for (i=0; i<f->attributes[x]->num_vals; i++)
 	{
 	  if (i > 0)
 	    printf(",");
-	  printf("%s",f->attributes[x]->vals[i]);
+	  printf("%s*",f->attributes[x]->vals[i]);
 	}
       attr++;
     }
