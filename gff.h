@@ -39,5 +39,6 @@ typedef struct {
   Attribute **attributes;
   int num_features;
   Feature **features;
+  int num_seqs;
   Seq **seqs;
 } GFFDoc;
