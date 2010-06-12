@@ -53,9 +53,12 @@ int gff_get_doc(GFFDoc *gffdoc, char *file)
   //r = gff_read_lines(n,file);
   //printf("number of records = %d\n",r);
 
+  // TODO sort out below to get right amount of memory allocated
+
   // allocate enough memory for more records than we need
   gffdoc->features = malloc(sizeof(Feature*)*n);
-  err = gff_read_file(gffdoc->features, &gffdoc->num_features, gffdoc->seqs, file);
+  gffdoc->seqs = malloc(sizeof(Seq*)*n);
+  err = gff_read_file(gffdoc->features, &gffdoc->num_features, gffdoc->seqs, &gffdoc->num_seqs, file);
 
   // handle errors
   switch(err)
@@ -153,7 +156,7 @@ int gff_features_match(Feature *f1, Feature *f2)
   return 1;
 }
 
-int gff_read_file(Feature **features,int *n, Seq **seqs, char *file)
+int gff_read_file(Feature **features,int *n, Seq **seqs, int *num_seqs, char *file)
 {
   FILE *fp;
   int x = 0;
@@ -223,7 +226,7 @@ int gff_read_file(Feature **features,int *n, Seq **seqs, char *file)
 	case GFF_FASTA: 
 	  printf("Remainder is FASTA data\n",x);
 	  // must deal with this but currently just stop
-	  err = gff_read_fasta(seqs,fp);
+	  err = gff_read_fasta(seqs,num_seqs,fp);
 	  if (err == GFF_BAD_FASTA)
 	    {
 	      free(feature);
@@ -276,12 +279,12 @@ int gff_read_file(Feature **features,int *n, Seq **seqs, char *file)
   return err;
 }
 
-int gff_read_fasta(Seq **seqs, FILE *fp)
+int gff_read_fasta(Seq **seqs, int *num_seqs, FILE *fp)
 {
   char buffer[BUFFER_SIZE];
   char *cp = buffer;
   int c;
-  int num_seqs = 0;
+  int n = 0;
   int new = 1;
   int len = 0;
   int err = GFF_FASTA;
@@ -311,12 +314,10 @@ int gff_read_fasta(Seq **seqs, FILE *fp)
 	      len = 0;
 	    }
       	}
-      else if (c == '>' || c == EOF)
+      //      else if (c == '>' || c == EOF)
+      else if (new == 0 && (c == '>' || c == EOF))
 	{ // end of seqstr
-	  new = 1;
 	  *cp = '\0';
-	  //	  seq_list->seq->seqstr = malloc(sizeof(char)*(len+1));
-	  //	  strcpy(seq_list->seq->seqstr,buffer);
 	  seq->seqstr = malloc(sizeof(char)*(len+1));
 	  strcpy(seq->seqstr,buffer);
 	  printf("%s len:%d\n",seq->seqstr,len);
@@ -325,7 +326,7 @@ int gff_read_fasta(Seq **seqs, FILE *fp)
 	  if (c == EOF)
 	    err = GFF_EOF;
 	  
-	  if (num_seqs == 0)
+	  if (n == 0)
 	    {
 	      seq_list = (Seq_list*)malloc(sizeof(Seq_list));
 	      seq_list_p = seq_list;
@@ -339,9 +340,20 @@ int gff_read_fasta(Seq **seqs, FILE *fp)
 	  seq_list_p->seq = malloc(sizeof(Seq));
 	  seq_list_p->seq->ID = seq->ID;
 	  seq_list_p->seq->seqstr = seq->seqstr;
+	  printf("%s %s\n",seq_list_p->seq->ID,seq_list_p->seq->seqstr);
 	  seq_list_p->next = NULL;
-	  num_seqs++;
-	  printf("num_fasta%d\n",num_seqs);
+	  n++;
+	  printf("num_fasta%d\n",n);
+	  new = 1;
+	}
+      else if (new == 1 && (c == '>' || c == EOF))
+	{
+	  // TODO FREE UP MEMORY
+	  //	  err = GFF_BAD_FASTA;
+	  printf("read_fasta3a: BAD DATA\n");
+	  free(seq->ID);
+	  err = GFF_EOF;
+	  new = 0;
 	}
       else
 	{
@@ -355,22 +367,57 @@ int gff_read_fasta(Seq **seqs, FILE *fp)
   if (err == GFF_EOF && new == 0)
     {
     err = GFF_BAD_FASTA;
+    seq_list_p = seq_list;
+    while (seq_list_p != NULL)
+      {
+	// free up any malloced memory
+	/*
+	free(seq_list_p->seq->ID);
+	free(seq_list_p->seq->seqstr);
+	free(seq_list_p->seq);
+	*/
+	// TODO possible problem here if seq not fully malloced!
+	  printf("read_fasta3b: BAD DATA\n");
+	gff_free_seq(seq_list_p->seq);
+	  printf("read_fasta3c: BAD DATA\n");
+      }
     }
   else // copy linked list to array
     {
-      seqs = malloc(sizeof(Seq)*num_seqs);
+      *num_seqs = n;
+      //      seqs = malloc(sizeof(Seq*)*n);
       seq_list_p = seq_list;
-      Seq *seq_p = (Seq*)seqs;
+      //      Seq *seq_p = (Seq*)seqs;
+      Seq *seq_p = *seqs;
+      len = 0;
       while (seq_list_p != NULL)
 	{
+	  /*
 	  seq_p = seq_list_p->seq;
+    printf("%s\n",seq_p->ID);
 	  seq_p++;
+	  */
+    printf("%s\n",seq_list_p->seq->ID);
+	  seqs[len++] = seq_list_p->seq;
 	  seq_list_p = seq_list_p->next;
 	}
     }
 
+  printf("Print Seq ID's %d\n",n);
+  for (len=0; len<n; len++)
+    printf("%s\n",seqs[len]->ID);
+    
   printf("Free up FASTA list\n");
-  // TODO free up linked list
+  // free up linked list
+  Seq_list *seq_list_p_next;
+  seq_list_p = seq_list;
+  while (seq_list_p != NULL)
+    {
+      seq_list_p_next = seq_list_p->next;
+      free(seq_list_p);
+      seq_list_p = seq_list_p_next;  
+    }
+
   free(seq);
   
   return err;
@@ -805,20 +852,41 @@ int gff_free_feature(Feature *fp, int no_locs)
   free(fp);
 }
 
+// free up an individual FASTA sequence
+int gff_free_seq(Seq *s)
+{
+  free(s->ID);
+  free(s->seqstr);
+  free(s);
+
+  return 1;
+}
+
 // frees up all the memory grabbed by the GFFDoc
 int gff_free(GFFDoc *gffdoc)
 {
   int x = 0;
   Feature **fp = gffdoc->features;
+  Seq **sp = gffdoc->seqs;
   int i,j;
 
   for (x=0; x<gffdoc->num_features; x++)
     {
+      // TO DO REPLACE 0 WITH NUM_LOCS
       gff_free_feature(*fp,0);
       fp++;
-      printf("Row %d free\n",x);
+      printf("Feature %d free\n",x);
     }
+
+  for (x=0; x<gffdoc->num_seqs; x++)
+    {
+      gff_free_seq(*sp);
+      sp++;
+      printf("Seq %d free\n",x);
+    }
+
   free(gffdoc->features);
+  free(gffdoc->seqs);
   free(gffdoc);
 
   return GFF_SUCCESS;
@@ -831,7 +899,6 @@ void gff_print_feature(Feature *f)
   int x,loc = 0;
 
   printf("print feature num_locs=%d\n",f->num_locs);
-  //  f->num_locs=1;
   for (loc=0; loc<f->num_locs; loc++)
     {
       if (f->seqid == NULL)
@@ -917,9 +984,6 @@ void gff_print_feature(Feature *f)
 	}
       printf("\n");
       
-      // print fasta
-
-
     }
   return;
 }
@@ -934,5 +998,16 @@ void gff_print(GFFDoc *gffdoc)
     {
       gff_print_feature(*fp++);
     } 
+  
+  // print fasta
+  printf("num_seqs=%d\n",gffdoc->num_seqs);
+  Seq **seq_p = gffdoc->seqs;
+  for (x=0; x<gffdoc->num_seqs; x++)
+    {
+      //      printf("%s : %s\n",gffdoc->seqs[x]->ID,gffdoc->seqs[x]->seqstr);
+      printf("%s : %s\n",(*seq_p)->ID,(*seq_p)->seqstr);
+      seq_p++;
+    } 
+
   return;
 }
