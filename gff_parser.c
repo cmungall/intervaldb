@@ -18,11 +18,12 @@ main()
   int x;
   char file[BUFFER_SIZE];
 
-  //  for (x=0; x<2; x++) 
-  for (x=1; x<2; x++) 
+  //  for (x=0; x<1000000; x++) 
     {
-      x = 7;
-      sprintf(file,"t/gfftab%d.dat",x);
+      x = 0;
+      sprintf(file,"t/gfftab%d.dat",0);
+      printf("NUMBER OF FILES = %d\n",x);
+      //sprintf(file,"t/argo-transcripts.gff3");
       GFFDoc *gff = malloc(sizeof(GFFDoc));
 
       //err = gff_get_doc(gff,"t/gfftab.dat"); 
